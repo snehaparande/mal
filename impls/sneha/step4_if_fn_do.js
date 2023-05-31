@@ -42,6 +42,31 @@ const set_bindings_in_env = (bindings, let_env) => {
   }
 }
 
+const handle_let = (env, bindings, exp) => {
+    const let_env = new Env(env);
+    set_bindings_in_env(bindings, let_env);
+    if (exp) {
+      return EVAL(exp, let_env);
+    }
+    return new MalNil();
+};
+
+const handle_do = (env, exps) => {
+  const res = exps.reduce((_, exp) => EVAL(exp, env), new MalNil());
+  return res;
+};
+
+const handle_if = (env, condition, true_block, false_block) => {
+  const cond_res = EVAL(condition, env);
+      if (cond_res === false || cond_res instanceof MalNil) {
+        if (false_block) {
+          return EVAL(false_block, env);
+        }
+        return new MalNil();
+      }
+      return EVAL(true_block, env);
+};
+
 const EVAL = (ast, env) => {
   if (!(ast instanceof MalList)) return eval_ast(ast, env);
   
@@ -52,14 +77,12 @@ const EVAL = (ast, env) => {
       env.set(ast.value[1], EVAL(ast.value[2], env));
       return env.get(ast.value[1]);
     case 'let*':
-      const let_env = new Env(env);
-      const bindings = ast.value[1];
-      set_bindings_in_env(bindings, let_env);
-
-      if (ast.value[2]) {
-        return EVAL(ast.value[2], let_env);
-      }
-      return new MalNil();
+      return handle_let(env, ast.value[1], ast.value[2]);
+    case 'do':
+      return handle_do(env, ast.value.slice(1));
+    case 'if': 
+      return handle_if(env, ast.value[1], ast.value[2], ast.value[3])
+      
   }
 
   const [fn, ...args] = eval_ast(ast, env).value;
@@ -73,6 +96,20 @@ env.set(new MalSymbol('+'), (...args) => args.reduce((a, b)=>  (a + b)));
 env.set(new MalSymbol('-'), (...args) => args.reduce((a, b)=>  (a - b)));
 env.set(new MalSymbol('*'), (...args) => args.reduce((a, b)=>  (a * b)));
 env.set(new MalSymbol('/'), (...args) => args.reduce((a, b)=>  (a / b)));
+env.set(new MalSymbol('prn'), (...args) => {
+  const strings = args.map(pr_str);
+  console.log(strings.join(' '));
+  return new MalNil();
+})
+env.set(new MalSymbol('='), (a , b) => a === b);
+env.set(new MalSymbol('<'), (a , b) => a < b);
+env.set(new MalSymbol('<='), (a , b) => a <= b);
+env.set(new MalSymbol('>'), (a , b) => a > b);
+env.set(new MalSymbol('>='), (a , b) => a >= b);
+env.set(new MalSymbol('list'), (...args) => new MalList(args));
+env.set(new MalSymbol('list?'), (arg) => arg instanceof MalList);
+env.set(new MalSymbol('count'), (arg) =>  arg.value.length);
+env.set(new MalSymbol('empty?'), (arg) =>  arg.value.length === 0);
 
 const rep = str => PRINT(EVAL(READ(str), env));
 
