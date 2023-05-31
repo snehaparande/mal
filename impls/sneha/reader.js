@@ -80,7 +80,6 @@ const read_atom = (reader) => {
     throw 'unbalanced';
   }
 
-  console.log(typeof token);
   return new MalSymbol(token);
 };
 
