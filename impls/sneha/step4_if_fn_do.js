@@ -3,6 +3,7 @@ const {read_str} = require('./reader');
 const {pr_str} = require('./printer');
 const { MalList, MalSymbol, MalVector, MalHashmap, MalNil } = require('./types');
 const { Env } = require('./env');
+const { env } = require("./core");
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -67,6 +68,13 @@ const handle_if = (env, condition, true_block, false_block) => {
       return EVAL(true_block, env);
 };
 
+const handle_fn = (outer, binds, asts) => {
+  return (...exps) => {
+    const env = Env.createEnv(outer, binds.value, exps);
+    return handle_do(env, asts);
+  }
+};
+
 const EVAL = (ast, env) => {
   if (!(ast instanceof MalList)) return eval_ast(ast, env);
   
@@ -82,7 +90,8 @@ const EVAL = (ast, env) => {
       return handle_do(env, ast.value.slice(1));
     case 'if': 
       return handle_if(env, ast.value[1], ast.value[2], ast.value[3])
-      
+    case 'fn*': 
+      return handle_fn(env, ast.value[1], ast.value.slice(2));
   }
 
   const [fn, ...args] = eval_ast(ast, env).value;
@@ -91,27 +100,9 @@ const EVAL = (ast, env) => {
 
 const PRINT = (malValue) => pr_str(malValue);
 
-const env = new Env();
-env.set(new MalSymbol('+'), (...args) => args.reduce((a, b)=>  (a + b)));
-env.set(new MalSymbol('-'), (...args) => args.reduce((a, b)=>  (a - b)));
-env.set(new MalSymbol('*'), (...args) => args.reduce((a, b)=>  (a * b)));
-env.set(new MalSymbol('/'), (...args) => args.reduce((a, b)=>  (a / b)));
-env.set(new MalSymbol('prn'), (...args) => {
-  const strings = args.map(pr_str);
-  console.log(strings.join(' '));
-  return new MalNil();
-})
-env.set(new MalSymbol('='), (a , b) => a === b);
-env.set(new MalSymbol('<'), (a , b) => a < b);
-env.set(new MalSymbol('<='), (a , b) => a <= b);
-env.set(new MalSymbol('>'), (a , b) => a > b);
-env.set(new MalSymbol('>='), (a , b) => a >= b);
-env.set(new MalSymbol('list'), (...args) => new MalList(args));
-env.set(new MalSymbol('list?'), (arg) => arg instanceof MalList);
-env.set(new MalSymbol('count'), (arg) =>  arg.value.length);
-env.set(new MalSymbol('empty?'), (arg) =>  arg.value.length === 0);
-
 const rep = str => PRINT(EVAL(READ(str), env));
+
+rep("(def! not (fn* (a) (if a false true)))");
 
 const repl = () => {
 rl.question( 'user> ', line=> {
