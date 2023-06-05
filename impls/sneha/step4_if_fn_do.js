@@ -60,7 +60,7 @@ const handle_do = (env, exps) => {
 const handle_if = (env, condition, true_block, false_block) => {
   const cond_res = EVAL(condition, env);
       if (cond_res === false || cond_res instanceof MalNil) {
-        if (false_block) {
+        if (false_block !== undefined) {
           return EVAL(false_block, env);
         }
         return new MalNil();

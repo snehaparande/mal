@@ -1,6 +1,7 @@
 const { pr_str } = require('./printer');
 const { MalList, MalSymbol, MalNil, MalValue } = require('./types');
 const { Env } = require('./env');
+const { read_str } = require('./reader');
 
 const deepEqual = (arg1, arg2) => {
   const val1 = arg1 instanceof MalValue ? arg1.value : arg1;
@@ -26,19 +27,24 @@ const deepEqual = (arg1, arg2) => {
 };
 
 const prn = (...args) => {
-  const strings = args.map(pr_str);
-  console.log(strings.join(' '));
+  const line = args.map((str)=> pr_str(str, true)).join(' ');
+  console.log(line);
   return new MalNil();
 }
 
 const pr_string = (...args) => {
   const line = args.map((str)=> pr_str(str, true)).join(' ');
-  console.log(line);
   return line;
 };
 
 const str_fn = (...args) => {
-  return args.map(pr_str).join('');
+  return args.map((str)=> pr_str(str, false)).join('');
+}
+
+const println = (...args) => {
+  const line = args.map((str)=> pr_str(str, false)).join('');
+  console.log(line);
+  return new MalNil();
 }
 
 const count = (arg) => {
@@ -56,7 +62,7 @@ env.set(new MalSymbol('*'), (...args) => args.reduce((a, b) => (a * b)));
 env.set(new MalSymbol('/'), (...args) => args.reduce((a, b) => (a / b)));
 env.set(new MalSymbol('prn'), prn);
 env.set(new MalSymbol('pr-str'), pr_string);
-env.set(new MalSymbol('println'), prn);
+env.set(new MalSymbol('println'), println);
 env.set(new MalSymbol('str'), str_fn);
 env.set(new MalSymbol('='), deepEqual);
 env.set(new MalSymbol('<'), (a, b) => a < b);
@@ -67,5 +73,6 @@ env.set(new MalSymbol('list'), (...args) => new MalList(args));
 env.set(new MalSymbol('list?'), (arg) => arg instanceof MalList);
 env.set(new MalSymbol('count'), count);
 env.set(new MalSymbol('empty?'), (arg) => arg.value.length === 0);
+env.set(new MalSymbol('read-string'), (string) => read_str(string.value));
 
 module.exports = {env};

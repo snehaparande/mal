@@ -1,7 +1,12 @@
-const pr_str = (malValue, print_readably) => {
+const pr_str = (malValue, print_readably = false) => {
   const str = malValue.toString();
+  
+  if (typeof malValue === "function") {
+    return "#<function>";
+  }
   if (print_readably) {
-    str.replaceAll(/\n/g, '\\n');
+    const newStr = str.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/\"/g, '\\\"');
+    return '"' + newStr + '"';
   }
   return str;
 

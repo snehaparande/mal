@@ -75,7 +75,7 @@ const read_atom = (reader) => {
   }
 
   if (token[0] === '"') {
-    if(token.match(/^".*"$/))return new MalString(token);
+    if(token.match(/^".*"$/))return new MalString(token.slice(1, -1));
 
     throw 'unbalanced';
   }
