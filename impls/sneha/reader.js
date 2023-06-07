@@ -77,11 +77,19 @@ const read_atom = (reader) => {
   if (token[0] === '"') {
     if(token.match(/^".*"$/))return new MalString(token.slice(1, -1));
 
+    console.log(token);
     throw 'unbalanced';
   }
 
   return new MalSymbol(token);
 };
+
+const prependSymbol = (reader, symbol) => {
+  reader.next();
+  const prepend_symbol = new MalSymbol(symbol);
+  const newAst = read_form(reader);
+  return new MalList([prepend_symbol, newAst]);
+}
 
 const read_form = (reader) => {
   const token = reader.peek();
@@ -95,6 +103,14 @@ const read_form = (reader) => {
       case '{':
         reader.next();
         return read_hashmap(reader);
+      case '\'':
+        return prependSymbol(reader, "quote");
+      case '`':
+        return prependSymbol(reader, "quasiquote");
+      case '~':
+        return prependSymbol(reader, "unquote");
+      case '~@':
+        return prependSymbol(reader, "splice-unquote");
     default:
       return read_atom(reader);
   }

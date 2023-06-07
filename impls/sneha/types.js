@@ -1,3 +1,27 @@
+const deepEqual = (arg1, arg2) => {
+  const val1 = arg1 instanceof MalValue ? arg1.value : arg1;
+  const val2 = arg2 instanceof MalValue ? arg2.value : arg2;
+
+
+  if (!Array.isArray(val1) || !Array.isArray(val2)) {
+    return val1 === val2;
+  }
+
+  if (val1.length !== val2.length) {
+    return false;
+  }
+
+  let i = 0;
+  while (i <= val1.length) {
+    if (!deepEqual(val1[i], val2[i])) {
+      return false;
+    }
+    i = i+1;
+  }
+
+  return true;
+};
+
 class MalValue {
   constructor(value) {
     this.value = value;
@@ -12,35 +36,73 @@ class MalSymbol extends MalValue{
   constructor(value){
     super(value);
   }
+
+  equals(item){
+    return item instanceof MalSymbol && deepEqual(item.value, this.value);
+  }
+
 }
 class MalKeyword extends MalValue{
   constructor(value){
     super(value);
+  }
+
+  equals(item){
+    return item instanceof MalKeyword && deepEqual(item.value, this.value);
   }
 }
 class MalString extends MalValue{
   constructor(value){
     super(value);
   }
+
+  equals(item){
+    return item instanceof MalString && deepEqual(item.value, this.value);
+  }
+
+  #toPrintedRepresentation(str) {
+    return str
+    .replace(/\\/g, '\\\\')
+    .replace(/\n/g, '\\n')
+    .replace(/\"/g, '\\\"');
+  }
+
+  toString(print_readably = true){
+    if (print_readably) {
+      return '"' + this.#toPrintedRepresentation(this.value) + '"'
+    }
+    return this.value.toString();
+  }
+
 }
 
-class MalList extends MalValue{
-  constructor(value){
-    super(value);
-  }
-
-  toString(){
-    return '(' + this.value.map(x => x.toString()).join(' ') + ')';
-  }
-
+class   MalSequence extends MalValue {
   isEmpty(){
     return this.value.length === 0;
   }
 }
 
-class MalVector extends MalValue{
+class MalList extends MalSequence{
   constructor(value){
     super(value);
+  }
+
+  equals(item){
+    return item instanceof MalList && deepEqual(item.value, this.value);
+  }
+
+  toString(){
+    return '(' + this.value.map(x => x.toString()).join(' ') + ')';
+  }
+}
+
+class MalVector extends MalSequence{
+  constructor(value){
+    super(value);
+  }
+
+  equals(item){
+    return item instanceof MalVector && deepEqual(item.value, this.value);
   }
 
   toString(){
@@ -50,6 +112,10 @@ class MalVector extends MalValue{
 class MalHashmap extends MalValue{
   constructor(value){
     super(value);
+  }
+
+  equals(item){
+    return item instanceof MalHashmap && deepEqual(item.value, this.value);
   }
 
   toString(){
@@ -62,16 +128,53 @@ class MalNil extends MalValue {
     super(null);
   }
 
+  equals(item){
+    return item instanceof MalNil && deepEqual(item.value, this.value);
+  }
+
   toString(){
     return 'nil';
   }
 }
 
+class MalAtom extends MalValue {
+  constructor(value) {
+    super(value);
+  }
+
+  equals(item){
+    return item instanceof MalAtom && deepEqual(item.value, this.value);
+  }
+
+  toString(){
+    return "(atom " + this.value.toString() + ")";
+  }
+
+  reset(newValue){
+    this.value = newValue;
+    return this.value;
+  }
+
+  swap(fun, args){
+    this.value = fun.apply(null, [this.value, ...args]);
+    return this.value;
+  }
+}
+
 class MalFunction extends MalValue {
-  constructor(ast, binds, env) {
+  constructor(ast, binds, env, fn) {
     super(ast);
     this.binds = binds;
     this.env = env;
+    this.fn = fn;
+  }
+
+  apply(context, args){
+    return this.fn.apply(context, args);
+  }
+
+  equals(item){
+    return item instanceof MalFunction && deepEqual(item.value, this.value);
   }
 
   toString(){
@@ -79,4 +182,4 @@ class MalFunction extends MalValue {
   }
 }
 
-module.exports = {MalValue, MalList, MalSymbol, MalVector, MalNil, MalHashmap, MalKeyword, MalString, MalFunction};
+module.exports = {deepEqual, MalValue, MalList, MalSymbol, MalVector, MalNil, MalHashmap, MalSequence, MalKeyword, MalString, MalFunction, MalAtom};
