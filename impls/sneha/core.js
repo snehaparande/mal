@@ -69,5 +69,10 @@ env.set(new MalSymbol('swap!'), (atom, fn, ...args) => atom.swap(fn, args));
 env.set(new MalSymbol('cons'), (value, list) => new MalList([value, ...list.value]));
 env.set(new MalSymbol('concat'), 
 (...lists) => new MalList(lists.flatMap(a => a.value)));
+env.set(new MalSymbol('nth'), (list, n) => list.nth(n));
+env.set(new MalSymbol('first'), (list) => list.first());
+env.set(
+  new MalSymbol('rest'), 
+(list) => list instanceof MalNil? new MalList([]) : list.rest());
 
 module.exports = {env};

@@ -80,6 +80,20 @@ class   MalSequence extends MalValue {
   isEmpty(){
     return this.value.length === 0;
   }
+
+  nth(n){
+    if(n >= this.value.length) throw 'index out of range';
+    return this.value[n];
+  }
+
+  first(){
+    if (this.value.length === 0) return new MalNil();
+    return this.value[0];
+  }
+
+  rest(){
+    return new MalList(this.value.slice(1));
+  }
 }
 
 class MalList extends MalSequence{
@@ -135,6 +149,10 @@ class MalNil extends MalValue {
   toString(){
     return 'nil';
   }
+
+  first(){
+    return new MalNil();
+  }
 }
 
 class MalAtom extends MalValue {
@@ -162,11 +180,12 @@ class MalAtom extends MalValue {
 }
 
 class MalFunction extends MalValue {
-  constructor(ast, binds, env, fn) {
+  constructor(ast, binds, env, fn, isMacro) {
     super(ast);
     this.binds = binds;
     this.env = env;
     this.fn = fn;
+    this.isMacro = isMacro;
   }
 
   apply(context, args){
